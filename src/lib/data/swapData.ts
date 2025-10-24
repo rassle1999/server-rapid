@@ -1,25 +1,4 @@
-import { client } from "./mongoClient"
-export const getSwapData = async () => {
-    const tokenData = await client.db("database1").collection("tokens_real").find({}).toArray();
-    const swapDataArrays = await Promise.all(
-        tokenData.map(async (token: any) => {
-            console.log("token.address:", token.address)
-            return await client
-                .db("database1")
-                .collection("swaps_real")
-                .find({ token: { $regex: `^${token.address}$`, $options: "i" } })
-                .sort({ _id: -1 })
-                .limit(10)
-                .toArray();
-        })
-    );
-
-    // Flatten all results into one array
-    const swapData = swapDataArrays.flat();
-    // const swapData = await client.db("database1").collection("swaps_real").find({}).sort({ _id: -1 }).limit(300).toArray();
-    console.log("data:", swapData);
-    return swapData;
-}
+import { client } from "../basic/mongoClient"
 export const getSwapDatabyToken = async (tokenAddress: string, currentTime: number, step: number, stepCount: number, left: number) => {
     const posA = currentTime - step * stepCount - left;
     const startDoc = await client
