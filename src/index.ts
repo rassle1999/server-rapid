@@ -6,7 +6,7 @@ import http from "http";
 import { client } from './lib/basic/mongoClient';
 import router1 from "./route/data";
 import router2 from "./route/post";
-import { verify_token } from "./lib/post/verify";
+import { verify_swap, verify_token } from "./lib/post/verify";
 const app = express();
 const PORT = Number(process.env.PORT) || 5010;
 
@@ -48,19 +48,24 @@ app.post("/webhook", async (req: Request, res: Response) => {
     await Promise.all(lgs.map(async (lg: any) => {
       if (lg.type == 0) {
         const token_info = await getStreamInformation(lg);
-        verify_token(lg,token_info);
-        token_row.push(token_info);
+        if(verify_token(lg,token_info)==true)
+          token_row.push(token_info);
       }
-      else swap_row.push(await getStreamInformation(lg));
+      else {
+        const swap_info = await getStreamInformation(lg);
+        const isValid = await verify_swap(lg,swap_info);
+        if(isValid==true)
+          swap_row.push(swap_info);
+      }
     }));
     if (token_row.length > 0) {
-      // console.log("Token:", token_row);
-      // broadcast({type:0,event:token_row});
+      console.log("Token:", token_row);
+      broadcast({type:0});
       // client.db("database1").collection("tokens_real").insertMany(token_row).catch(err => { console.error("MongoDB insertMany error:", err); });
     }
     if (swap_row.length > 0) {
-      // console.log("Swap:", swap_row);
-      // broadcast({type:1,event:swap_row});
+      console.log("Swap:", swap_row);
+      broadcast({type:1});
       // client.db("database1").collection("swaps_real").insertMany(swap_row).catch(err => { console.error("MongoDB insertMany error:", err); });
     }
   }
