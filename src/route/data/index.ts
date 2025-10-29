@@ -1,28 +1,51 @@
 import express, { Request, Response } from "express";
 import { client } from '../../lib/basic/mongoClient';
 import { getSwapDatabyToken } from "../../lib/data/swapData";
-import { tokenDatabyDate, tokenDatabyMarketCap,tokenDatabyVolume } from "../../lib/data/tokenData";
+import { tokenDatabyDate, tokenDatabyMarketCap, tokenDatabyVolume, tokenDatabyAddress, getMarketCapData } from "../../lib/data/tokenData";
+import { getCacheData, getTrendingCacheData } from "../../lib/data/cacheData";
 const router1 = express.Router();
-router1.get("/tokenCount", async (req: Request, res: Response) => {
-  const tokenCount = (await client.db("database1").collection("tokens_real").find({}).toArray()).length;
+router1.get("/tokenCount/:search1", async (req: Request, res: Response) => {
+const { search1 } = req.params;
+  const search = search1.slice(7);
+  const tokenCount = (await client.db("database1").collection("tokens_real")
+    .aggregate([{
+      $match: {
+        $or: [
+          { name: { $regex: search, $options: "i" } },
+          { symbol: { $regex: search, $options: "i" } }
+        ]
+      }
+    }]).toArray()).length;
   res.send({ tokenCount: tokenCount });
 });
-router1.get("/tokens/:page/:mode", async (req: Request, res: Response) => {
-  const { page, mode } = req.params;
+router1.get("/tokens/:page/:mode/:search1", async (req: Request, res: Response) => {
+  const { page, mode, search1 } = req.params;
+  const search = search1.slice(7);
+  console.log("search:", search);
   let tokens, tokenData;
   if (mode == "volume") {
     console.log("******************Volume ***********************");
-    tokenData = await tokenDatabyVolume(page);
+    tokenData = await getCacheData(page, search);
+    // tokenData = await tokenDatabyVolume(page, search);
   }
   else if (mode == "marketCap") {
     console.log("******************Market Cap ***********************");
-    tokenData = await tokenDatabyMarketCap(page); 
+    tokenData = await tokenDatabyMarketCap(page, search);
   }
   else {
-    tokenData = await tokenDatabyDate(page);
+    tokenData = await tokenDatabyDate(page, search);
   }
   res.send({ tokens: tokenData });
 });
+router1.get("/trending", async (req: Request, res: Response) => {
+  const tokenData = await getTrendingCacheData();
+  res.send({ tokens: tokenData });
+})
+router1.get("/token/:address", async (req: Request, res: Response) => {
+  const { address } = req.params;
+  const token = await tokenDatabyAddress(address);
+  res.send({ token: token });
+})
 router1.get("/price/:token/:mode", async (req: Request, res: Response) => {
   const { token, mode } = req.params;
   const now = Date.now() / 1000;
@@ -39,4 +62,8 @@ router1.get("/price/:token/:mode", async (req: Request, res: Response) => {
   const priceData = await getSwapDatabyToken(token, now, step, count, left);
   res.send({ price: priceData });
 });
+router1.get("/dash_price", async (req: Request, res: Response) => {
+  await getMarketCapData();
+  res.send({ ok: 'ok' });
+})
 export default router1;

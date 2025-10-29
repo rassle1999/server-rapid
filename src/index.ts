@@ -7,6 +7,7 @@ import { client } from './lib/basic/mongoClient';
 import router1 from "./route/data";
 import router2 from "./route/post";
 import { verify_swap, verify_token } from "./lib/post/verify";
+import { startCacheWarmer } from "./lib/cache/cacheWarmer";
 const app = express();
 const PORT = Number(process.env.PORT) || 5010;
 
@@ -74,5 +75,6 @@ app.post("/webhook", async (req: Request, res: Response) => {
 server.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   await client.connect();
+  startCacheWarmer("volume");
   console.log("Connected successfully to server");
 });
