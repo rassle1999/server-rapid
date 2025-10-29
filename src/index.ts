@@ -1,9 +1,9 @@
 import express, { Request, Response } from "express";
-import { getStreamInformation } from "./lib/data/information";
+import { getStreamInformation } from "./lib/post/information";
 import cors from "cors";
 import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
-import { client } from './lib/basic/mongoClient';
+import { client } from './lib/basic/database/mongoClient';
 import router1 from "./route/data";
 import router2 from "./route/post";
 import { verify_swap, verify_token } from "./lib/post/verify";

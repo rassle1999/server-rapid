@@ -12,7 +12,6 @@ router2.post('/upload', upload.single('file'), async (req, res) => {
     return;
   }
   const publicUrl = await addJson(name, symbol, description, file);
-  console.log('Received file of type:', file);
   res.send({ publicUrl: publicUrl });
 });
 export default router2;

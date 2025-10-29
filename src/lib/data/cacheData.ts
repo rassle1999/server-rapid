@@ -1,18 +1,33 @@
 import { getCache } from "../cache/cacheManager";
-import { BATCH_SIZE, PAGE_SIZE } from "../basic/constant";
-import { setStartIndex } from "../cache/cacheWarmer";
-import { tokenDatabyVolume } from "./tokenData";
-export const getCacheData = async (page: string, search?: string) => {
+import { BATCH_SIZE, PAGE_SIZE } from "../basic/constant/constant";
+import { setVolumeStartIndex,setMarketCapStartIndex } from "../cache/cacheWarmer";
+import { tokenDatabyVolume,tokenDatabyMarketCap } from "./tokenData";
+export const getCacheVolumeData = async (page: string, search?: string) => {
     const startIndex = parseInt(page) - BATCH_SIZE / 2 > 0 ? parseInt(page) - BATCH_SIZE / 2 : 0;
-    setStartIndex(startIndex);
+    setVolumeStartIndex(startIndex);
     const cached = String(await getCache("token_volume_"));
-    console.log("JSON:",cached);
     const data = cached ? JSON.parse(cached) : [];
     const tokenData = data.slice((parseInt(page)-1)*6, parseInt(page)*6);
     if(search && search != ""){
         let tokenSearchData = tokenData.filter((t:any) => t.name.includes(search));
         if(tokenSearchData.length<PAGE_SIZE){
             tokenSearchData = tokenDatabyVolume((parseInt(page)-1)*PAGE_SIZE,PAGE_SIZE,search);
+        }
+        return tokenSearchData;
+    }
+    return tokenData;
+}
+export const getCacheMarketCapData = async (page: string, search?: string) => {
+    const startIndex = parseInt(page) - BATCH_SIZE / 2 > 0 ? parseInt(page) - BATCH_SIZE / 2 : 0;
+    setMarketCapStartIndex(startIndex);
+    const cached = String(await getCache("token_marketcap_"));
+    console.log("JSON:",cached);
+    const data = cached ? JSON.parse(cached) : [];
+    const tokenData = data.slice((parseInt(page)-1)*6, parseInt(page)*6);
+    if(search && search != ""){
+        let tokenSearchData = tokenData.filter((t:any) => t.name.includes(search));
+        if(tokenSearchData.length<PAGE_SIZE){
+            tokenSearchData = tokenDatabyMarketCap((parseInt(page)-1)*PAGE_SIZE,PAGE_SIZE,search);
         }
         return tokenSearchData;
     }

@@ -1,4 +1,4 @@
-import supabase from "../basic/supabaseClient"
+import supabase from "../basic/database/supabaseClient"
 import { v4 as uuidv4 } from 'uuid';
 export const addImage = async (file: Express.Multer.File) => {
     const filePath = `upload_images/${file.originalname}&token=${uuidv4()}`;

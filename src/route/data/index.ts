@@ -1,11 +1,11 @@
 import express, { Request, Response } from "express";
-import { client } from '../../lib/basic/mongoClient';
+import { client } from '../../lib/basic/database/mongoClient';
 import { getSwapDatabyToken } from "../../lib/data/swapData";
-import { tokenDatabyDate, tokenDatabyMarketCap, tokenDatabyVolume, tokenDatabyAddress, getMarketCapData } from "../../lib/data/tokenData";
-import { getCacheData, getTrendingCacheData } from "../../lib/data/cacheData";
+import { tokenDatabyDate, tokenDatabyAddress, getMarketCapData } from "../../lib/data/tokenData";
+import { getCacheVolumeData, getCacheMarketCapData, getTrendingCacheData } from "../../lib/data/cacheData";
 const router1 = express.Router();
 router1.get("/tokenCount/:search1", async (req: Request, res: Response) => {
-const { search1 } = req.params;
+  const { search1 } = req.params;
   const search = search1.slice(7);
   const tokenCount = (await client.db("database1").collection("tokens_real")
     .aggregate([{
@@ -24,13 +24,10 @@ router1.get("/tokens/:page/:mode/:search1", async (req: Request, res: Response) 
   console.log("search:", search);
   let tokens, tokenData;
   if (mode == "volume") {
-    console.log("******************Volume ***********************");
-    tokenData = await getCacheData(page, search);
-    // tokenData = await tokenDatabyVolume(page, search);
+    tokenData = await getCacheVolumeData(page, search);
   }
   else if (mode == "marketCap") {
-    console.log("******************Market Cap ***********************");
-    tokenData = await tokenDatabyMarketCap(page, search);
+    tokenData = await getCacheMarketCapData(page, search);
   }
   else {
     tokenData = await tokenDatabyDate(page, search);

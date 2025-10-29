@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { FACTORY_ADDRESS,FACTORY_ABI,BONDING_ABI,provider } from "../basic/constant";
+import { FACTORY_ADDRESS,FACTORY_ABI,BONDING_ABI,provider } from "../basic/constant/constant";
 export const getBondingCurveInfo = async (address: string) => {
     const contract = new ethers.Contract(FACTORY_ADDRESS, FACTORY_ABI, provider);
     const bondingCurveAddress = await contract.bondingCurveMap(address);

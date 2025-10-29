@@ -1,18 +1,25 @@
-import { client } from "../basic/mongoClient";
+import { client } from "../basic/database/mongoClient";
 export const tokenDatabyDate = async (page: string, search?: string) => {
+    const searchText = search || "";
     const tokens = await client
         .db("database1")
         .collection("tokens_real")
-        .find({})
+        .aggregate([
+            {
+                $match: {
+                    $or: [
+                        { name: { $regex: searchText, $options: "i" } },
+                        { symbol: { $regex: searchText, $options: "i" } }
+                    ]
+                }
+            },
+        ])
         .sort({ createdAt: 1 })
         .skip((parseInt(page) - 1) * 6)
         .limit(6)
         .toArray();
     const tokenAddresses = tokens.map(t => new RegExp(`^${t.address}$`, "i"));
-
     const now = Date.now() / 1000;
-
-    // Get latest swaps
     const latestSwaps = await client.db("database1")
         .collection("swaps_real")
         .aggregate([
@@ -21,8 +28,6 @@ export const tokenDatabyDate = async (page: string, search?: string) => {
             { $group: { _id: "$token", swap: { $first: "$$ROOT" } } }
         ])
         .toArray();
-
-    // Get swaps from 24h before
     const swapsBefore = await client.db("database1")
         .collection("swaps_real")
         .aggregate([
@@ -42,15 +47,12 @@ export const tokenDatabyDate = async (page: string, search?: string) => {
     const beforeMap = Object.fromEntries(
         swapsBefore.map(s => [s._id.toLowerCase(), s.swap])
     );
-
     const tokenData = tokens.map(token => {
         const addr = token.address.toLowerCase();
         const swap = latestMap[addr];
         const swapBefore = beforeMap[addr];
-
         const price = parseFloat(swap?.price || 0);
         const oldPrice = parseFloat(swapBefore?.price || 0);
-
         return {
             id: token.address,
             name: token.name,
@@ -65,12 +67,21 @@ export const tokenDatabyDate = async (page: string, search?: string) => {
     });
     return tokenData;
 }
-export const tokenDatabyMarketCap = async (page: string, search?: string) => {
+export const tokenDatabyMarketCap = async (startIndex: number, count: number, search?: string) => {
     const now = Date.now() / 1000;
+    const searchText = search || "";
     const tokens = await client
         .db("database1")
         .collection("tokens_real")
         .aggregate([
+            {
+                $match: {
+                    $or: [
+                        { name: { $regex: searchText, $options: "i" } },
+                        { symbol: { $regex: searchText, $options: "i" } }
+                    ]
+                }
+            },
             {
                 $lookup: {
                     from: "swaps_real",
@@ -124,19 +135,37 @@ export const tokenDatabyMarketCap = async (page: string, search?: string) => {
                     name: "$name",
                     symbol: "$symbol",
                     image: "$uriData.image",
-                    price: 1,
-                    priceChange: 1,
+                    price: {
+                        $cond: {
+                            if: { $not: [{ $isNumber: "$price" }] },
+                            then: 0,
+                            else: "$price"
+                        }
+                    },
+                    priceChange: {
+                        $cond: {
+                            if: { $not: [{ $isNumber: "$priceChange" }] },
+                            then: 0,
+                            else: "$priceChange"
+                        }
+                    },
                     totalSupply: "$totalSupply",
                     createdAt: "$createdAt",
-                    marketCap: 1
+                    marketCap: {
+                        $cond: {
+                            if: { $not: [{ $isNumber: "$marketCap" }] },
+                            then: 0,
+                            else: "$marketCap"
+                        }
+                    },
                 }
             },
             { $sort: { marketCap: -1 } },
-            { $skip: (parseInt(page) - 1) * 6 },
-            { $limit: 6 }
+            { $skip: startIndex },
+            { $limit: count }
         ])
         .toArray();
-    console.log("Market Cap:", tokens);
+    console.log("Market Cap:", tokens.length);
     return tokens;
 }
 export const tokenDatabyVolume = async (startIndex: number, count: number, search?: string) => {
@@ -265,15 +294,10 @@ export const tokenDatabyAddress = async (address: string) => {
         .db("database1")
         .collection("tokens_real")
         .findOne({ address: { $regex: `^${address}$`, $options: "i" } });
-
     const now = Date.now() / 1000;
-
-    // Get latest swaps
     const latestSwap = await client.db("database1")
         .collection("swaps_real")
         .findOne({ token: { $regex: `^${address}$`, $options: "i" } }, { sort: { date: -1 } })
-
-    // Get swaps from 24h before
     const swapBefore = await client.db("database1")
         .collection("swaps_real")
         .findOne(
@@ -282,7 +306,6 @@ export const tokenDatabyAddress = async (address: string) => {
         );
     const price = parseFloat(latestSwap?.price || 0) / 1e18;
     const oldPrice = parseFloat(swapBefore?.price || 0) / 1e18;
-
     return {
         id: address,
         name: token?.name,
