@@ -1,5 +1,5 @@
 import { client } from "../basic/database/mongoClient";
-export const tokenDatabyDate = async (page: string, search?: string) => {
+export const tokenDatabyDate = async (startIndex: number, count: number, search?: string) => {
     const searchText = search || "";
     const tokens = await client
         .db("database1")
@@ -15,8 +15,8 @@ export const tokenDatabyDate = async (page: string, search?: string) => {
             },
         ])
         .sort({ createdAt: 1 })
-        .skip((parseInt(page) - 1) * 6)
-        .limit(6)
+        .skip(startIndex)
+        .limit(count)
         .toArray();
     const tokenAddresses = tokens.map(t => new RegExp(`^${t.address}$`, "i"));
     const now = Date.now() / 1000;
@@ -304,8 +304,8 @@ export const tokenDatabyAddress = async (address: string) => {
             { token: { $regex: `^${address}$`, $options: "i" }, date: { $lt: now - 24 * 60 * 60 } },
             { sort: { date: -1 } }
         );
-    const price = parseFloat(latestSwap?.price || 0) / 1e18;
-    const oldPrice = parseFloat(swapBefore?.price || 0) / 1e18;
+    const price = parseFloat(latestSwap?.price || 0);
+    const oldPrice = parseFloat(swapBefore?.price || 0);
     return {
         id: address,
         name: token?.name,
@@ -313,7 +313,7 @@ export const tokenDatabyAddress = async (address: string) => {
         image: token?.uriData?.image,
         price,
         priceChange: price - oldPrice,
-        marketCap: (parseFloat(latestSwap?.price || 0) * parseFloat(token?.totalSupply || 0)) / 1e36,
+        marketCap: (parseFloat(latestSwap?.price || 0) * parseFloat(token?.totalSupply || 0)),
         createdAt: token?.createdAt,
         address: token?.address
     };

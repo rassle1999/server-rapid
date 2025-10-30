@@ -30,7 +30,7 @@ router1.get("/tokens/:page/:mode/:search1", async (req: Request, res: Response) 
     tokenData = await getCacheMarketCapData(page, search);
   }
   else {
-    tokenData = await tokenDatabyDate(page, search);
+    tokenData = await tokenDatabyDate((parseInt(page)-1)*6,6, search);
   }
   res.send({ tokens: tokenData });
 });
@@ -40,6 +40,7 @@ router1.get("/trending", async (req: Request, res: Response) => {
 })
 router1.get("/token/:address", async (req: Request, res: Response) => {
   const { address } = req.params;
+  console.log("Token address:",address);
   const token = await tokenDatabyAddress(address);
   res.send({ token: token });
 })
@@ -59,6 +60,12 @@ router1.get("/price/:token/:mode", async (req: Request, res: Response) => {
   const priceData = await getSwapDatabyToken(token, now, step, count, left);
   res.send({ price: priceData });
 });
+router1.get("/state/:count",async(req: Request, res:Response)=>{
+  const {count} =req.params;
+  console.log("state:",count);
+  const tokenData = await tokenDatabyDate(0,parseInt(count));
+  res.send({ tokens: tokenData});
+})
 router1.get("/dash_price", async (req: Request, res: Response) => {
   await getMarketCapData();
   res.send({ ok: 'ok' });
