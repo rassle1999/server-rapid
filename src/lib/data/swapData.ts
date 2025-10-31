@@ -1,6 +1,11 @@
 import { client } from "../basic/database/mongoClient"
+import { FAKEINITIALLIQUIDITY } from "../basic/constant/constant";
 export const getSwapDatabyToken = async (tokenAddress: string, currentTime: number, step: number, stepCount: number, left: number) => {
     const posA = currentTime - step * stepCount - left;
+    const token = await client
+        .db("database1")
+        .collection("tokens_real")
+        .findOne({ address: { $regex: `^${tokenAddress}$`, $options: "i" } });
     const startDoc = await client
         .db("database1")
         .collection("swaps_real")
@@ -32,10 +37,10 @@ export const getSwapDatabyToken = async (tokenAddress: string, currentTime: numb
     const priceData = [];
     for (var i = 0; i < stepCount; i++) {
         const pos = posA + i * step;
-        const price = data.find((d) => (d.date < pos))?.price || 0;
+        const price = data.find((d) => (d.date < pos))?.price || (FAKEINITIALLIQUIDITY * 1e19 / token?.totalSupply / 11);
         priceData.push({ time: pos, price: price });
     }
-    const price = data.find((d) => (d.date < currentTime))?.price || 0;
+    const price = data.find((d) => (d.date < currentTime))?.price || (FAKEINITIALLIQUIDITY * 1e19 / token?.totalSupply / 11);
     priceData.push({ time: currentTime, price: price });
     return priceData;
 }

@@ -11,7 +11,6 @@ export const getSwapInformation = async (data: string,date:string) => {
 export const getTokenInformation = async (add: string, date: string) => {
     const address = reg_address(add);
     const tokenContract = new ethers.Contract(address, TOKEN_ABI, provider);
-    console.log("address:", address);
     const createdAt = parseInt(date);
     const uri = await tokenContract.uri();
     const totalSupply = (await tokenContract.totalSupply()).toString();

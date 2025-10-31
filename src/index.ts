@@ -6,7 +6,7 @@ import http from "http";
 import { client } from './lib/basic/database/mongoClient';
 import router1 from "./route/data";
 import router2 from "./route/post";
-import { verify_swap, verify_token } from "./lib/post/verify";
+import { verify_swap} from "./lib/post/verify";
 import { startCacheWarmer } from "./lib/cache/cacheWarmer";
 const app = express();
 const PORT = Number(process.env.PORT) || 5010;
@@ -43,7 +43,6 @@ function broadcast(event: any) {
 app.post("/webhook", async (req: Request, res: Response) => {
   if (req.body.logs.length > 0) {
     var lgs = req.body.logs;
-    console.log("block:", lgs[0].number);
     let token_row: any[] = [];
     let swap_row: any[] = [];
     await Promise.all(lgs.map(async (lg: any) => {
@@ -59,12 +58,10 @@ app.post("/webhook", async (req: Request, res: Response) => {
       }
     }));
     if (token_row.length > 0) {
-      console.log("Token:", token_row);
       broadcast({ type: 0 });
       client.db("database1").collection("tokens_real").insertMany(token_row).catch(err => { console.error("MongoDB insertMany error:", err); });
     }
     if (swap_row.length > 0) {
-      console.log("Swap:", swap_row);
       broadcast({ type: 1 });
       client.db("database1").collection("swaps_real").insertMany(swap_row).catch(err => { console.error("MongoDB insertMany error:", err); });
     }

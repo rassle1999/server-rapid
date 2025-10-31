@@ -1,4 +1,5 @@
 import { client } from "../basic/database/mongoClient";
+import { FAKEINITIALLIQUIDITY } from "../basic/constant/constant";
 export const tokenDatabyDate = async (startIndex: number, count: number, search?: string) => {
     const searchText = search || "";
     const tokens = await client
@@ -14,7 +15,7 @@ export const tokenDatabyDate = async (startIndex: number, count: number, search?
                 }
             },
         ])
-        .sort({ createdAt: 1 })
+        .sort({ createdAt: -1 })
         .skip(startIndex)
         .limit(count)
         .toArray();
@@ -51,8 +52,8 @@ export const tokenDatabyDate = async (startIndex: number, count: number, search?
         const addr = token.address.toLowerCase();
         const swap = latestMap[addr];
         const swapBefore = beforeMap[addr];
-        const price = parseFloat(swap?.price || 0);
-        const oldPrice = parseFloat(swapBefore?.price || 0);
+        const price = parseFloat(swap?.price || FAKEINITIALLIQUIDITY * 1e19 / token.totalSupply / 11);
+        const oldPrice = parseFloat(swapBefore?.price || FAKEINITIALLIQUIDITY * 1e19 / token.totalSupply / 11);
         return {
             id: token.address,
             name: token.name,
@@ -60,7 +61,7 @@ export const tokenDatabyDate = async (startIndex: number, count: number, search?
             image: token.uriData?.image,
             price,
             priceChange: price - oldPrice,
-            marketCap: (parseFloat(swap?.price || 0) * parseFloat(token.totalSupply || 0)),
+            marketCap: (parseFloat(swap?.price || FAKEINITIALLIQUIDITY * 1e19 / token.totalSupply / 11) * parseFloat(token.totalSupply || 0)),
             createdAt: token.createdAt,
             address: token.address
         };
@@ -138,7 +139,12 @@ export const tokenDatabyMarketCap = async (startIndex: number, count: number, se
                     price: {
                         $cond: {
                             if: { $not: [{ $isNumber: "$price" }] },
-                            then: 0,
+                            then: {
+                                $divide: [
+                                    FAKEINITIALLIQUIDITY * 1e19 / 11,
+                                    { $toDouble: "$totalSupply" }
+                                ]
+                            },
                             else: "$price"
                         }
                     },
@@ -154,7 +160,7 @@ export const tokenDatabyMarketCap = async (startIndex: number, count: number, se
                     marketCap: {
                         $cond: {
                             if: { $not: [{ $isNumber: "$marketCap" }] },
-                            then: 0,
+                            then: FAKEINITIALLIQUIDITY * 1e19 / 11,
                             else: "$marketCap"
                         }
                     },
@@ -165,7 +171,6 @@ export const tokenDatabyMarketCap = async (startIndex: number, count: number, se
             { $limit: count }
         ])
         .toArray();
-    console.log("Market Cap:", tokens.length);
     return tokens;
 }
 export const tokenDatabyVolume = async (startIndex: number, count: number, search?: string) => {
@@ -258,7 +263,12 @@ export const tokenDatabyVolume = async (startIndex: number, count: number, searc
                     price: {
                         $cond: {
                             if: { $not: [{ $isNumber: "$price" }] },
-                            then: 0,
+                            then: {
+                                $divide: [
+                                    FAKEINITIALLIQUIDITY * 1e19 / 11,
+                                    { $toDouble: "$totalSupply" }
+                                ]
+                            },
                             else: "$price"
                         }
                     },
@@ -274,7 +284,7 @@ export const tokenDatabyVolume = async (startIndex: number, count: number, searc
                     marketCap: {
                         $cond: {
                             if: { $not: [{ $isNumber: "$marketCap" }] },
-                            then: 0,
+                            then: FAKEINITIALLIQUIDITY * 1e19 / 11,
                             else: "$marketCap"
                         }
                     },
@@ -286,7 +296,6 @@ export const tokenDatabyVolume = async (startIndex: number, count: number, searc
             { $limit: count }
         ])
         .toArray();
-    console.log("tokenData:", tokens.length);
     return tokens;
 }
 export const tokenDatabyAddress = async (address: string) => {
@@ -304,8 +313,8 @@ export const tokenDatabyAddress = async (address: string) => {
             { token: { $regex: `^${address}$`, $options: "i" }, date: { $lt: now - 24 * 60 * 60 } },
             { sort: { date: -1 } }
         );
-    const price = parseFloat(latestSwap?.price || 0);
-    const oldPrice = parseFloat(swapBefore?.price || 0);
+    const price = parseFloat(latestSwap?.price || FAKEINITIALLIQUIDITY * 1e19 / token?.totalSupply / 11);
+    const oldPrice = parseFloat(swapBefore?.price || FAKEINITIALLIQUIDITY * 1e19 / token?.totalSupply / 11);
     return {
         id: address,
         name: token?.name,
@@ -313,69 +322,8 @@ export const tokenDatabyAddress = async (address: string) => {
         image: token?.uriData?.image,
         price,
         priceChange: price - oldPrice,
-        marketCap: (parseFloat(latestSwap?.price || 0) * parseFloat(token?.totalSupply || 0)),
+        marketCap: (parseFloat(latestSwap?.price || FAKEINITIALLIQUIDITY * 1e19 / token?.totalSupply / 11) * parseFloat(token?.totalSupply || 0)),
         createdAt: token?.createdAt,
         address: token?.address
     };
-}
-export const getMarketCapData = async () => {
-    const now = Date.now() / 1000;
-    const tokens = await client
-        .db("database1")
-        .collection("tokens_real")
-        .aggregate([
-            {
-                $lookup: {
-                    from: "swaps_real",
-                    let: { addr: { $toLower: "$address" } },
-                    pipeline: [
-                        {
-                            $match: { $expr: { $eq: [{ $toLower: "$token" }, "$$addr"] } }
-                        },
-                        { $sort: { "date": 1 } },
-                    ],
-                    as: "swap"
-                }
-            },
-            { $unwind: { path: "$swap" } },
-            // {
-            //     $match: {
-            //         date: { $gte: new Date(Date.now() - 60 * 60 * 1000) }
-            //     }
-            // },
-            // { $sort: { date: 1 } },
-            {
-                $setWindowFields: {
-                    partitionBy: "$token", // per token
-                    sortBy: { date: 1 },
-                    output: {
-                        lastMarketCap: {
-                            $last: {
-                                $multiply: [
-                                    { $toDouble: "$swap.price" },
-                                    { $toDouble: "$totalSupply" }
-                                ]
-                            },
-                            window: { documents: ["unbounded", "current"] }
-                        }
-                    }
-                }
-            },
-            // {
-            //     $group: {
-            //         _id: {
-            //             $dateTrunc: {
-            //                 date: "$date",
-            //                 unit: "minute",
-            //                 binSize: 5
-            //             }
-            //         },
-            //         totalMarketCap: { $sum: "$lastMarketCap" }
-            //     }
-            // },
-            // { $sort: { _id: 1 } }
-        ])
-        .toArray();
-    console.log("Chart:", tokens.length);
-    return tokens;
 }

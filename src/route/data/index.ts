@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { client } from '../../lib/basic/database/mongoClient';
 import { getSwapDatabyToken } from "../../lib/data/swapData";
-import { tokenDatabyDate, tokenDatabyAddress, getMarketCapData } from "../../lib/data/tokenData";
+import { tokenDatabyDate, tokenDatabyAddress} from "../../lib/data/tokenData";
 import { getCacheVolumeData, getCacheMarketCapData, getTrendingCacheData } from "../../lib/data/cacheData";
 const router1 = express.Router();
 router1.get("/tokenCount/:search1", async (req: Request, res: Response) => {
@@ -21,7 +21,6 @@ router1.get("/tokenCount/:search1", async (req: Request, res: Response) => {
 router1.get("/tokens/:page/:mode/:search1", async (req: Request, res: Response) => {
   const { page, mode, search1 } = req.params;
   const search = search1.slice(7);
-  console.log("search:", search);
   let tokens, tokenData;
   if (mode == "volume") {
     tokenData = await getCacheVolumeData(page, search);
@@ -40,7 +39,6 @@ router1.get("/trending", async (req: Request, res: Response) => {
 })
 router1.get("/token/:address", async (req: Request, res: Response) => {
   const { address } = req.params;
-  console.log("Token address:",address);
   const token = await tokenDatabyAddress(address);
   res.send({ token: token });
 })
@@ -62,12 +60,7 @@ router1.get("/price/:token/:mode", async (req: Request, res: Response) => {
 });
 router1.get("/state/:count",async(req: Request, res:Response)=>{
   const {count} =req.params;
-  console.log("state:",count);
   const tokenData = await tokenDatabyDate(0,parseInt(count));
   res.send({ tokens: tokenData});
-})
-router1.get("/dash_price", async (req: Request, res: Response) => {
-  await getMarketCapData();
-  res.send({ ok: 'ok' });
 })
 export default router1;

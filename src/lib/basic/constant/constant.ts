@@ -28,3 +28,4 @@ export const RPC_URL = "https://sparkling-billowing-breeze.base-mainnet.quiknode
 export const provider = new ethers.providers.JsonRpcProvider(RPC_URL);
 export const BATCH_SIZE = 100;
 export const PAGE_SIZE = 6;
+export const FAKEINITIALLIQUIDITY = 1500_000_000_000_000_000;

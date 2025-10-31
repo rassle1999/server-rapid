@@ -21,7 +21,6 @@ export const getCacheMarketCapData = async (page: string, search?: string) => {
     const startIndex = parseInt(page) - BATCH_SIZE / 2 > 0 ? parseInt(page) - BATCH_SIZE / 2 : 0;
     setMarketCapStartIndex(startIndex);
     const cached = String(await getCache("token_marketcap_"));
-    console.log("JSON:",cached);
     const data = cached ? JSON.parse(cached) : [];
     const tokenData = data.slice((parseInt(page)-1)*6, parseInt(page)*6);
     if(search && search != ""){
