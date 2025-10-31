@@ -14,7 +14,12 @@ router_price.get("/price/:token/:mode", async (req: Request, res: Response) => {
   if (mode == "1M") {
     step = 3600 * 24, count = 31, left = now % step;
   }
-  const priceData = await getSwapDatabyToken(token, now, step, count, left);
-  res.send({ price: priceData });
+  try {
+    const priceData = await getSwapDatabyToken(token, now, step, count, left);
+    res.send({ price: priceData });
+  } catch (error) {
+    console.log("error:",error);
+    res.send({ price: [] });
+  }
 });
 export default router_price;
