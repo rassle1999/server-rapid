@@ -4,8 +4,9 @@ import cors from "cors";
 import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
 import { client } from './lib/basic/database/mongoClient';
-import router1 from "./route/data";
-import router2 from "./route/post";
+import router_token from "./route/router_token";
+import router_price from "./route/router_price";
+import router_upload from "./route/router_upload";
 import { verify_swap} from "./lib/post/verify";
 import { startCacheWarmer } from "./lib/cache/cacheWarmer";
 const app = express();
@@ -18,8 +19,9 @@ app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello from TypeScript + Node backend!");
 });
-app.use("/", router1);
-app.use("/", router2);
+app.use("/", router_token);
+app.use("/", router_price);
+app.use("/", router_upload);
 
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });

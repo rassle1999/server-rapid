@@ -1,10 +1,10 @@
 import express, { Request, Response } from "express";
 import multer from "multer";
-import { addJson } from "../../lib/post/addCoin";
+import { addJson } from "../lib/post/addCoin";
 const storage = multer.memoryStorage(); // or multer.diskStorage({ ... })
 const upload = multer({ storage: storage });
-const router2 = express.Router();
-router2.post('/upload', upload.single('file'), async (req, res) => {
+const router_upload = express.Router();
+router_upload.post('/upload', upload.single('file'), async (req, res) => {
   const file = req.file;
   const { name, symbol, description } = req.body;
   if (file == undefined) {
@@ -14,4 +14,4 @@ router2.post('/upload', upload.single('file'), async (req, res) => {
   const publicUrl = await addJson(name, symbol, description, file);
   res.send({ publicUrl: publicUrl });
 });
-export default router2;
+export default router_upload;
